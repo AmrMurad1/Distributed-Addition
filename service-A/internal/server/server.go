@@ -12,7 +12,7 @@ type Server struct {
 	pb.UnimplementedAdditionServiceServer
 }
 
-func NewServer() *Server {
+func SumServer() *Server {
 	return &Server{}
 }
 

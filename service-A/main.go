@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net"
+	"os"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -16,6 +17,12 @@ const (
 )
 
 func main() {
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = ":50051"
+	}
+
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
@@ -23,7 +30,7 @@ func main() {
 
 	s := grpc.NewServer()
 
-	additionServer := server.NewServer()
+	additionServer := server.SumServer()
 	pb.RegisterAdditionServiceServer(s, additionServer)
 
 	reflection.Register(s)

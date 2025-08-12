@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  service-a:
+    build: 
+      context: ./service-A
+      dockerfile: Dockerfile
+    ports:
+      - "50051:50051"
+    container_name: addition-service
+    restart: unless-stopped
+    environment:
+      - PORT=50051
+    networks:
+      - distributed-addition-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "50051"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  distributed-addition-network:
+    driver: bridge

@@ -1,0 +1,48 @@
+# Version control
+.git
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# IDE files (GoLand/JetBrains)
+.idea/
+*.iml
+
+# Editor swap files
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+
+# Go build artifacts
+main
+service-A
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go cache & test binaries
+*.test
+*.out
+
+# Go module/vendor
+vendor/
+
+# Temporary files
+tmp/
+temp/
