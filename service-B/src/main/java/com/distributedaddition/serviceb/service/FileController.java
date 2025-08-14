@@ -1,6 +1,4 @@
-package com.distributedaddition.serviceb.controller;
-
-import com.distributedaddition.serviceb.service.FileStorage;
+package com.distributedaddition.serviceb.service;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
