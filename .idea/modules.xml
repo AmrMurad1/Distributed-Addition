@@ -3,7 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/Distributed-Addition.iml" filepath="$PROJECT_DIR$/.idea/Distributed-Addition.iml" />
-      <module fileurl="file://$PROJECT_DIR$/service-B/service-B.iml" filepath="$PROJECT_DIR$/service-B/service-B.iml" />
     </modules>
   </component>
 </project>
