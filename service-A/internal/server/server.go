@@ -29,7 +29,7 @@ func (s *Server) Add(ctx context.Context, req *pb.AddRequest) (*pb.AddResponse, 
 	log.Printf("Received Add request: %d + %d", req.GetNum1(), req.GetNum2())
 
 	// add the numbers before send
-	result := int64(req.GetNum1() * req.GetNum2())
+	result := int64(req.GetNum1() + req.GetNum2())
 
 	err := s.kafkaProducer.SendNumber(int(result))
 	if err != nil {
