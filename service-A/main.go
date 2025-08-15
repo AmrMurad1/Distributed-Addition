@@ -4,6 +4,8 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -13,14 +15,13 @@ import (
 )
 
 const (
-	port = ":50051"
+	defaultPort = ":50051"
 )
 
 func main() {
-
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = ":50051"
+		port = defaultPort
 	}
 
 	lis, err := net.Listen("tcp", port)
@@ -37,7 +38,23 @@ func main() {
 
 	log.Printf("gRPC server listening at %v", lis.Addr())
 
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+	go func() {
+		if err := s.Serve(lis); err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Println("Shutting down server...")
+
+	// close Kafka producer
+	if err := additionServer.Close(); err != nil {
+		log.Printf("Error closing Kafka producer: %v", err)
 	}
+
+	s.GracefulStop()
+	log.Println("Server stopped")
 }
