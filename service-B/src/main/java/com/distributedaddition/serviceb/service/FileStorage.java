@@ -11,7 +11,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class FileStorage {
 
     private static final Logger logger = LoggerFactory.getLogger(FileStorage.class);
-    private static final String FILE_PATH = "numbers.txt";
+    private static final String FILE_PATH = "/home/amrmurad/Distributed-Addition/service-B/number.txt";
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public void addNumber(int number) {

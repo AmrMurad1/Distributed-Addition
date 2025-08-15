@@ -2,23 +2,34 @@ version: '3.8'
 
 services:
   service-a:
-    build: 
+    build:
       context: ./service-A
       dockerfile: Dockerfile
     ports:
       - "50051:50051"
-    container_name: addition-service
+    container_name: service-a
     restart: unless-stopped
-    environment:
-      - PORT=50051
     networks:
       - distributed-addition-network
-    healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "50051"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+
+  service-b:
+    build:
+      context: ./service-B
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    container_name: service-b
+    restart: unless-stopped
+    volumes:
+        - /home/amrmurad/Distributed-Addition/service-B/number.txt:/app/number.txt
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - distributed-addition-network
 
 networks:
   distributed-addition-network:
     driver: bridge
+
+volumes:
+  data:
