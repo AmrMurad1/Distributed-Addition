@@ -11,7 +11,7 @@ public class Consumer {
 
     private FileStorage fileStorage;
 
-    @KafkaListener(topics = "numbers-topic", groupId = "service-b-group")
+    @KafkaListener(topics = "addition", groupId = "service-b-group")
     public void handleNumber(String message){
         try {
             log.info("Received number form Kafka: {}", message);

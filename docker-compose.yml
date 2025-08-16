@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
@@ -53,7 +55,7 @@ services:
     container_name: service-b
     restart: unless-stopped
     volumes:
-      - /home/amrmurad/Distributed-Addition/service-B/number.txt:/app/number.txt
+      - /home/amrmurad/Distributed-Addition/service-B/number.txt:/data/number.txt
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
@@ -66,5 +68,3 @@ networks:
   distributed-addition-network:
     driver: bridge
 
-volumes:
-  data:

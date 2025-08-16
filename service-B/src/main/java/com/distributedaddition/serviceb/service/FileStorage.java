@@ -1,17 +1,15 @@
 package com.distributedaddition.serviceb.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
 import java.io.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+@Slf4j
 @Service
 public class FileStorage {
 
-    private static final Logger logger = LoggerFactory.getLogger(FileStorage.class);
-    private static final String FILE_PATH = "/home/amrmurad/Distributed-Addition/service-B/number.txt";
+    private static final String FILE_PATH = "/data/number.txt";
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public void addNumber(int number) {
@@ -23,7 +21,7 @@ public class FileStorage {
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_PATH))) {
                 writer.write(String.valueOf(newNumber));
             } catch (IOException e) {
-                logger.error("Error writing to file: {}", FILE_PATH, e);
+                log.error("Error writing to file: {}", FILE_PATH, e);
             }
         } finally {
             lock.writeLock().unlock();
@@ -44,7 +42,7 @@ public class FileStorage {
                     return Integer.parseInt(line.trim());
                 }
             } catch (IOException | NumberFormatException e) {
-                logger.error("Error reading from file: {}", FILE_PATH, e);
+                log.error("Error reading from file: {}", FILE_PATH, e);
             }
             return 0;
         } finally {
