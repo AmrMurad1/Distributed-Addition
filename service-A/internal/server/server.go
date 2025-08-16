@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"service-A/internal/kafka"
+	"service-A/internal/outbox"
 	pb "service-A/internal/proto/addition"
 )
 
@@ -15,25 +16,39 @@ const (
 
 type Server struct {
 	pb.UnimplementedAdditionServiceServer
-	kafkaProducer *kafka.Producer
+	kafkaProducer   *kafka.Producer
+	outboxRepo      *outbox.Repository
+	outboxPublisher *outbox.Publisher
 }
 
-func SumServer() *Server {
+func SumServer(outboxRepo *outbox.Repository) *Server {
 	producer := kafka.NewProducer(KafkaHost, KafkaTopic)
+
+	outboxPublisher := outbox.NewPublisher(outboxRepo, producer, 5)
+
 	return &Server{
-		kafkaProducer: producer,
+		kafkaProducer:   producer,
+		outboxRepo:      outboxRepo,
+		outboxPublisher: outboxPublisher,
 	}
+}
+
+func (s *Server) StartOutboxPublisher(ctx context.Context) {
+	s.outboxPublisher.Start(ctx)
 }
 
 func (s *Server) Add(ctx context.Context, req *pb.AddRequest) (*pb.AddResponse, error) {
 	log.Printf("Received Add request: %d + %d", req.GetNum1(), req.GetNum2())
 
-	// add the numbers before send
 	result := int64(req.GetNum1() + req.GetNum2())
 
-	err := s.kafkaProducer.SendNumber(int(result))
+	additionEvent := outbox.AdditionEvent{
+		Number: int(result),
+	}
+
+	err := s.outboxRepo.SaveEvent(ctx, "addition_result", additionEvent)
 	if err != nil {
-		log.Printf("Error sending sum to Kafka: %v", err)
+		log.Printf("Error saving event to outbox: %v", err)
 	}
 
 	response := &pb.AddResponse{
@@ -45,5 +60,6 @@ func (s *Server) Add(ctx context.Context, req *pb.AddRequest) (*pb.AddResponse, 
 }
 
 func (s *Server) Close() error {
+	s.outboxPublisher.Stop()
 	return s.kafkaProducer.Close()
 }

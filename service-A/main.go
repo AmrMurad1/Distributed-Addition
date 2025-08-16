@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net"
 	"os"
@@ -10,6 +11,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
+	"service-A/internal/db"
+	"service-A/internal/outbox"
 	pb "service-A/internal/proto/addition"
 	"service-A/internal/server"
 )
@@ -19,6 +22,11 @@ const (
 )
 
 func main() {
+	db.InitDB()
+	defer db.Close()
+
+	outboxRepo := outbox.NewRepository(db.DB)
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
@@ -31,8 +39,11 @@ func main() {
 
 	s := grpc.NewServer()
 
-	additionServer := server.SumServer()
+	additionServer := server.SumServer(outboxRepo)
 	pb.RegisterAdditionServiceServer(s, additionServer)
+
+	ctx := context.Background()
+	additionServer.StartOutboxPublisher(ctx)
 
 	reflection.Register(s)
 
@@ -50,9 +61,8 @@ func main() {
 
 	log.Println("Shutting down server...")
 
-	// close Kafka producer
 	if err := additionServer.Close(); err != nil {
-		log.Printf("Error closing Kafka producer: %v", err)
+		log.Printf("Error closing server resources: %v", err)
 	}
 
 	s.GracefulStop()

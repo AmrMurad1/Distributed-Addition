@@ -20,4 +20,9 @@ RUN chown appuser:appuser service-a
 USER appuser
 EXPOSE 50051
 
+# env
+ENV DATABASE_URL=""
+ENV KAFKA_BOOTSTRAP_SERVERS=""
+ENV PORT=":50051"
+
 CMD ["./service-a"]
