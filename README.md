@@ -7,7 +7,8 @@ The system allows adding numbers through **Service A** and processing/storing th
 
 ## Architecture
 
-![System Architecture](https://github.com/user-attachments/assets/23d58829-b6a4-4aea-bf51-c4b5cd92ad6f)
+![System Architecture] <img width="3018" height="938" alt="image" src="https://github.com/user-attachments/assets/73c0a047-fa8a-425c-a12e-12b1744cf94e" />
+
 
 - **Service A**: gRPC server that receives numbers and publishes them to Kafka.
 - **Kafka**: Message broker for reliable communication between services.
