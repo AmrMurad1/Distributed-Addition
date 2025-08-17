@@ -37,10 +37,13 @@ services:
       dockerfile: Dockerfile
     ports:
       - "50051:50051"
+      - "8081:8081"  # Metrics endpoint
     container_name: service-a
     restart: unless-stopped
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - DATABASE_URL=postgres://postgres:amoory2003amoory@host.docker.internal:5432/addition
+      - METRICS_PORT=8081
     depends_on:
       - kafka
     networks:
@@ -59,12 +62,55 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,metrics,prometheus
+      - MANAGEMENT_ENDPOINT_METRICS_ENABLED=true
+      - MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED=true
+      - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
     depends_on:
       - kafka
     networks:
       - distributed-addition-network
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - distributed-addition-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    restart: unless-stopped
+    networks:
+      - distributed-addition-network
+
+volumes:
+  prometheus_data:
+  grafana_data:
+
 networks:
   distributed-addition-network:
     driver: bridge
-

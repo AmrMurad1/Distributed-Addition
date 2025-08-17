@@ -5,8 +5,11 @@ import (
 	"log"
 
 	"service-A/internal/kafka"
+	"service-A/internal/metricsMiddleware"
 	"service-A/internal/outbox"
 	pb "service-A/internal/proto/addition"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
@@ -40,6 +43,9 @@ func (s *Server) StartOutboxPublisher(ctx context.Context) {
 func (s *Server) Add(ctx context.Context, req *pb.AddRequest) (*pb.AddResponse, error) {
 	log.Printf("Received Add request: %d + %d", req.GetNum1(), req.GetNum2())
 
+	timer := prometheus.NewTimer(metricsMiddleware.GRPCRequestDuration.WithLabelValues("Add"))
+	defer timer.ObserveDuration()
+
 	result := int64(req.GetNum1() + req.GetNum2())
 
 	additionEvent := outbox.AdditionEvent{
@@ -48,8 +54,13 @@ func (s *Server) Add(ctx context.Context, req *pb.AddRequest) (*pb.AddResponse, 
 
 	err := s.outboxRepo.SaveEvent(ctx, "addition_result", additionEvent)
 	if err != nil {
+		metricsMiddleware.GRPCRequestsTotal.WithLabelValues("Add", "error").Inc()
 		log.Printf("Error saving event to outbox: %v", err)
 	}
+
+	// Increment metrics
+	metricsMiddleware.OutboxEventsCreated.Inc()
+	metricsMiddleware.GRPCRequestsTotal.WithLabelValues("Add", "success").Inc()
 
 	response := &pb.AddResponse{
 		Result: result,

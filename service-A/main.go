@@ -4,10 +4,12 @@ import (
 	"context"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
@@ -18,7 +20,8 @@ import (
 )
 
 const (
-	defaultPort = ":50051"
+	defaultPort        = ":50051"
+	defaultMetricsPort = ":8081"
 )
 
 func main() {
@@ -26,6 +29,19 @@ func main() {
 	defer db.Close()
 
 	outboxRepo := outbox.NewRepository(db.DB)
+
+	metricsPort := os.Getenv("METRICS_PORT")
+	if metricsPort == "" {
+		metricsPort = defaultMetricsPort
+	}
+
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		log.Printf("Metrics server listening on %s", metricsPort)
+		if err := http.ListenAndServe(metricsPort, nil); err != nil {
+			log.Printf("Metrics server error: %v", err)
+		}
+	}()
 
 	port := os.Getenv("PORT")
 	if port == "" {

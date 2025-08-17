@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"service-A/internal/kafka"
+	"service-A/internal/metricsMiddleware"
 )
 
 type Publisher struct {
@@ -30,8 +31,8 @@ func NewPublisher(repository *Repository, kafkaProducer *kafka.Producer, interva
 		kafkaProducer: kafkaProducer,
 		ticker:        time.NewTicker(time.Duration(intervalSeconds) * time.Second),
 		done:          make(chan bool),
-		batchSize:     50,
-		workerCount:   5,
+		batchSize:     50, // Process up to 50 events per batch
+		workerCount:   5,  // Use 5 concurrent workers
 	}
 }
 
@@ -63,12 +64,16 @@ func (p *Publisher) processOutboxEvents(ctx context.Context) {
 		return
 	}
 
+	// Update metrics for queue size
+	metricsMiddleware.OutboxEventsInQueue.Set(float64(len(events)))
+
 	if len(events) == 0 {
 		return
 	}
 
 	log.Printf("Processing %d unprocessed events", len(events))
 
+	// Process events in batches
 	for i := 0; i < len(events); i += p.batchSize {
 		end := i + p.batchSize
 		if end > len(events) {
@@ -80,11 +85,11 @@ func (p *Publisher) processOutboxEvents(ctx context.Context) {
 }
 
 func (p *Publisher) processBatch(ctx context.Context, events []Event) {
+	// Channel to collect results from workers
 	results := make(chan ProcessingResult, len(events))
 
 	jobs := make(chan Event, len(events))
 
-	// Start workers
 	var wg sync.WaitGroup
 	for i := 0; i < p.workerCount; i++ {
 		wg.Add(1)
@@ -94,7 +99,7 @@ func (p *Publisher) processBatch(ctx context.Context, events []Event) {
 	for _, event := range events {
 		jobs <- event
 	}
-	close(jobs)
+	close(jobs) // No more jobs
 
 	go func() {
 		wg.Wait()
@@ -107,9 +112,11 @@ func (p *Publisher) processBatch(ctx context.Context, events []Event) {
 	for result := range results {
 		if result.Error != nil {
 			log.Printf("Failed to publish event %d: %v", result.EventID, result.Error)
+			metricsMiddleware.OutboxEventsProcessed.WithLabelValues("error").Inc()
 			failedCount++
 		} else {
 			successfulEventIDs = append(successfulEventIDs, result.EventID)
+			metricsMiddleware.OutboxEventsProcessed.WithLabelValues("success").Inc()
 		}
 	}
 
@@ -145,10 +152,10 @@ func (p *Publisher) markEventsProcessedBatch(ctx context.Context, eventIDs []int
 
 	query := `UPDATE outbox SET processed = TRUE WHERE id = ANY($1)`
 
-	_, err := p.repository.db.Exec(ctx, query, eventIDs)
+	_, err := p.repository.GetDB().Exec(ctx, query, eventIDs)
 	if err != nil {
 		log.Printf("Failed to mark events as processed in batch: %v", err)
-
+		// Fallback to individual updates
 		p.markEventsProcessedIndividually(ctx, eventIDs)
 		return
 	}
@@ -156,6 +163,7 @@ func (p *Publisher) markEventsProcessedBatch(ctx context.Context, eventIDs []int
 	log.Printf("Successfully marked %d events as processed", len(eventIDs))
 }
 
+// markEventsProcessedIndividually is a fallback for batch marking
 func (p *Publisher) markEventsProcessedIndividually(ctx context.Context, eventIDs []int) {
 	log.Println("Falling back to individual event marking...")
 
@@ -174,7 +182,13 @@ func (p *Publisher) publishEvent(event Event) error {
 			return err
 		}
 
-		return p.kafkaProducer.SendNumber(additionEvent.Number)
+		err := p.kafkaProducer.SendNumber(additionEvent.Number)
+		if err != nil {
+			metricsMiddleware.KafkaMessagesProduced.WithLabelValues("addition", "error").Inc()
+		} else {
+			metricsMiddleware.KafkaMessagesProduced.WithLabelValues("addition", "success").Inc()
+		}
+		return err
 	default:
 		log.Printf("Unknown event type: %s", event.EventType)
 		return nil
