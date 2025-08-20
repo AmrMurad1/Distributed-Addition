@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	KafkaHost  = "localhost:9092"
+	KafkaHost  = "kafka:9092"
 	KafkaTopic = "addition"
 )
 

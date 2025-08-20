@@ -31,6 +31,19 @@ services:
     networks:
       - distributed-addition-network
 
+  db:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: amoory2003amoory
+      POSTGRES_DB: addition
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - distributed-addition-network
+
   service-a:
     build:
       context: ./service-A
@@ -42,10 +55,11 @@ services:
     restart: unless-stopped
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - DATABASE_URL=postgres://postgres:amoory2003amoory@host.docker.internal:5432/addition
-      - METRICS_PORT=8081
+      - DATABASE_URL=postgres://postgres:amoory2003amoory@db:5432/addition?sslmode=disable
+      - METRICS_PORT=:8081
     depends_on:
       - kafka
+      - db
     networks:
       - distributed-addition-network
 
@@ -63,8 +77,6 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,metrics,prometheus
-      - MANAGEMENT_ENDPOINT_METRICS_ENABLED=true
-      - MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED=true
       - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
     depends_on:
       - kafka

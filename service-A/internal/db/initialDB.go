@@ -13,7 +13,7 @@ var DB *pgxpool.Pool
 func InitDB() {
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
-		databaseURL = "postgres://postgres:amoory2003amoory@localhost:5432/addition"
+		databaseURL = "postgres://postgres:amoory2003amoory@db:5432/addition?sslmode=disable"
 	}
 
 	pool, err := pgxpool.New(context.Background(), databaseURL)

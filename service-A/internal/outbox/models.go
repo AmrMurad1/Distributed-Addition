@@ -8,7 +8,7 @@ import (
 type Event struct {
 	ID        int
 	EventType string
-	Payload   json.RawMessage // this for jsonb storage! i need it i guess
+	Payload   json.RawMessage // this for jsonb storage!
 	CreatedAt time.Time
 	Processed bool
 }
